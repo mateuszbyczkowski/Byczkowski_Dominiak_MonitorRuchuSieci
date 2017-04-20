@@ -88,7 +88,7 @@ namespace Serwer
                     {
                       
                         string response = getCommunique(user[i].client.Tcp);
-                        CheckCommunicat(response, user[i].client);
+                        CheckCommunicat(response, user[i].nr);
 
                     }
                 }
@@ -100,9 +100,9 @@ namespace Serwer
 
             }
         }
-        public void CheckCommunicat(string communique, Client Client)
+        public void CheckCommunicat(string communique, int nr)
         {
-            Console.WriteLine("Odebrany komunikat  od użytkownika " + Client.Number + " o tresci "+ communique);
+            Console.WriteLine("Odebrany komunikat  od użytkownika " + nr + " o tresci "+ communique);
         }
       
         private string getCommunique(TcpClient tcpClient)
