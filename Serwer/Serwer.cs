@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -25,6 +26,7 @@ namespace Serwer
 
         private static System.Timers.Timer aTimer;
         public static string table = "";
+    
 
         public Server(int port, bool forwardingStatus = false)
         {
@@ -35,6 +37,7 @@ namespace Serwer
         }
         public void WaitForConnection()
         {
+
             Console.WriteLine(@"Uruchomić serwer? t/n");
             string command = Console.ReadLine();
             if (command == "t")
@@ -44,6 +47,11 @@ namespace Serwer
 
 
             NumberOfDevices = 1;
+
+            string a = GetDefaultGateway().ToString();
+            Console.WriteLine();
+
+
 
             Console.WriteLine("Oczekiwanie na połączenie użytkownikow");
             TcpClient client;
@@ -56,18 +64,19 @@ namespace Serwer
                 communique = getCommunique(client);
                 Console.WriteLine("Użytkownik " + i + " o adresie " + communique + " połączony");
                 user.Add(i, new Users(i, communique, client));
+                
 
             }
 
             Task t1 = new Task(new Action(CheckForMessages));
             Task t2 = new Task(new Action(NewUser));
-            //Task t3 = new Task(new Action(SendIP));
+            Task t3 = new Task(new Action(WritePingTable));
 
 
             t1.Start();
             t2.Start();
-            //t3.Start();
-            Task.WaitAny(t1, t2);
+            t3.Start();
+            Task.WaitAny(t1, t2,t3);
         }
         public void NewUser()
         {
@@ -81,6 +90,7 @@ namespace Serwer
                 NumberOfDevices++;
                 Console.WriteLine("Użytkownik " + NumberOfDevices + " o adresie " + communique + " połączony");
                 user.Add(NumberOfDevices, new Users(NumberOfDevices, communique, client));
+                Thread.Sleep(200);
                 SendIPaddr();
             }
         }
@@ -95,6 +105,8 @@ namespace Serwer
 
                     Thread.Sleep(300);
                 }
+              
+                SendCommunique("#####", i.Value.client.Tcp);
             }
 
             Console.WriteLine("Odswiezono adresy IP");
@@ -138,7 +150,19 @@ namespace Serwer
 
         public void CheckCommunicat(string communique, int nr)
         {
-            Console.WriteLine("Odebrany komunikat  od użytkownika " + nr.ToString() + " o tresci " + communique);
+           
+            user[nr].NewPing(communique);
+            ////Console.WriteLine("Odebrany komunikat  od użytkownika " + nr.ToString() + " o tresci " + communique);
+            //Thread.Sleep(1000);
+            //Console.WriteLine("Wynik pingowania do urządzeń z klienta nr " + nr+":");
+            //foreach (KeyValuePair<string, bool> j in user[nr].ping)
+            //{
+            //    Console.WriteLine(j.Key + ": " + j.Value);
+
+            //        //Thread.Sleep(100);
+            //}
+               
+          
         }
 
         private string getCommunique(TcpClient tcpClient)
@@ -171,5 +195,62 @@ namespace Serwer
                 Console.WriteLine("Exception: {0}", e);
             }
         }
+
+
+        public static void WritePingTable()
+        {
+            while (true)
+            {
+                //Console.WriteLine("Podaj komunikat");
+                string communique = Console.ReadLine();
+
+                if(communique=="help")
+                {
+                    Console.Clear();
+                    Console.WriteLine("Dostępne opcje komunikatów: ");
+                    Console.WriteLine("    ping - wyświetlenie tablicy pingów połączonych urządzeń");
+                    Console.WriteLine("   clear - wyczyszczenie konsoli");
+
+
+                }
+                else if (communique == "ping")
+                {
+                    foreach (KeyValuePair<int, Users> i in user)
+                    {
+
+                        Console.WriteLine("Wynik pingowania do urządzeń z klienta nr " + i.Value.nr + ":");
+                        foreach (KeyValuePair<string, bool> j in user[i.Value.nr].ping)
+                        {
+                            Console.WriteLine(j.Key + ": " + j.Value);
+
+                            //Thread.Sleep(100);
+                        }
+                    }
+                }
+                else if(communique == "clear")
+                {
+                    Console.Clear();
+                }
+                else
+                {
+                    Console.WriteLine("----NIEZNANE POLECENIE----");
+                    Console.WriteLine("Jeśli chcesz zobaczyć możliwe polecenia wpisz help");
+                }
+                
+
+            }
+        }
+
+        public static IPAddress GetDefaultGateway()
+        {
+            return NetworkInterface
+                .GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up)
+                .SelectMany(n => n.GetIPProperties()?.GatewayAddresses)
+                .Select(g => g?.Address)
+                .FirstOrDefault(a => a != null);
+        }
+
+      
     }
 }
