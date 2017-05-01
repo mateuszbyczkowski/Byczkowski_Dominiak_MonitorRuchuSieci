@@ -17,14 +17,8 @@ namespace Serwer
     {
         public bool ForwardingStatus { get; private set; }
         public TcpListener Listener { get; private set; }
-        public Client ClientOne { get; private set; }
-        public Client ClientTwo { get; private set; }
-
         private static int NumberOfDevices;
-
         public static Dictionary<int, Users> user = new Dictionary<int, Users>();
-
-        private static System.Timers.Timer aTimer;
         public static string table = "";
     
 
@@ -48,8 +42,8 @@ namespace Serwer
 
             NumberOfDevices = 1;
 
-            string a = GetDefaultGateway().ToString();
-            Console.WriteLine();
+           // string a = GetDefaultGateway().ToString();
+           //Console.WriteLine();
 
 
 
@@ -62,7 +56,7 @@ namespace Serwer
 
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
-                Console.WriteLine("Użytkownik " + i + " o adresie " + communique + " połączony");
+                Console.WriteLine( i + " użytkownik połączony");
                 user.Add(i, new Users(i, communique, client));
                 
 
@@ -88,7 +82,7 @@ namespace Serwer
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
                 NumberOfDevices++;
-                Console.WriteLine("Użytkownik " + NumberOfDevices + " o adresie " + communique + " połączony");
+                Console.WriteLine("Użytkownik " + NumberOfDevices + " połączony");
                 user.Add(NumberOfDevices, new Users(NumberOfDevices, communique, client));
                 Thread.Sleep(200);
                 SendIPaddr();
@@ -109,7 +103,7 @@ namespace Serwer
                 SendCommunique("#####", i.Value.client.Tcp);
             }
 
-            Console.WriteLine("Odswiezono adresy IP");
+            Console.WriteLine("Odswieżono adresy IP");
         }
         public void CheckForMessages()
         {
@@ -117,15 +111,9 @@ namespace Serwer
             while (true)
             {
 
-                table = "";
-                //foreach (KeyValuePair<int, Users> kvp in user)
-                //{
-                //    table=table+kvp.Value.IP+"$";
-                //}
+               table = "";
 
-
-
-                for (int i = 1; i <= n; i++)
+               for (int i = 1; i <= n; i++)
                 {
                     if (user[i].client.Tcp.Available > 0)
                     {
@@ -152,17 +140,6 @@ namespace Serwer
         {
            
             user[nr].NewPing(communique);
-            ////Console.WriteLine("Odebrany komunikat  od użytkownika " + nr.ToString() + " o tresci " + communique);
-            //Thread.Sleep(1000);
-            //Console.WriteLine("Wynik pingowania do urządzeń z klienta nr " + nr+":");
-            //foreach (KeyValuePair<string, bool> j in user[nr].ping)
-            //{
-            //    Console.WriteLine(j.Key + ": " + j.Value);
-
-            //        //Thread.Sleep(100);
-            //}
-               
-          
         }
 
         private string getCommunique(TcpClient tcpClient)
@@ -210,8 +187,8 @@ namespace Serwer
                     Console.WriteLine("Dostępne opcje komunikatów: ");
                     Console.WriteLine("    ping - wyświetlenie tablicy pingów połączonych urządzeń");
                     Console.WriteLine("   clear - wyczyszczenie konsoli");
-
-
+                    Console.WriteLine("  router - wyświetlenie bram domyślnych połączonych urządzeń");
+                    Console.WriteLine("    exit - wyłączenie programu");
                 }
                 else if (communique == "ping")
                 {
@@ -230,6 +207,22 @@ namespace Serwer
                 else if(communique == "clear")
                 {
                     Console.Clear();
+                }
+                else if(communique == "router")
+                {
+                    Console.WriteLine("ADRES BRAMY"  + " - " + "ADRES URZĄDZENIA");
+                    foreach (KeyValuePair<int, Users> i in user)
+                    {
+                        Console.WriteLine( i.Value.DefoultGateaway + " - " + i.Value.IP );
+                    }
+                }
+                else if (communique == "exit")
+                {
+                    foreach (KeyValuePair<int, Users> i in user)
+                    {
+                         SendCommunique("EXIT", i.Value.client.Tcp);
+                    }
+                    System.Diagnostics.Process.GetCurrentProcess().Kill();
                 }
                 else
                 {

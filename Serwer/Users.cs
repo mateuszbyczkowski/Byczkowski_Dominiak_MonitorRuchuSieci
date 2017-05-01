@@ -26,42 +26,9 @@ namespace Serwer
         public Users(int new_nr, string new_ip, TcpClient new_tcp)
         {
             nr = new_nr;
-            IP = new_ip;
+
+            IP = GetGateway(new_ip);
             client = new Client(new_tcp, "1");
-
-            String value = new_ip;
-            Char delimiter = '.';
-            String[] substrings = new String[2];
-            substrings = value.Split(delimiter);
-            substrings[3] = "1";
-            value = "";
-            foreach (var substring in substrings)
-            {
-                value = value + substring + ".";
-            }
-            value = value.Remove(value.Length - 1);
-            
-
-
-           // bool pinging = false;
-           // Ping isPing = new Ping();
-       
-           //try
-           //{
-           //     PingReply reply = isPing.Send(value);
-           //     pinging = reply.Status == IPStatus.Success;
-           //}
-           //catch (PingException)
-           //{
-
-           //}
-
-           // if (pinging == true)
-           // {
-           //     NewPing("Router IP: " + value + "#" + pinging.ToString());
-           // }
-
-
         } 
 
 
@@ -96,6 +63,21 @@ namespace Serwer
             {
                 ping.Add(value, TorF);
             }
+        }
+
+        private string GetGateway(string addr)
+        {
+            string IP = "";
+            string gate = "";
+
+            String value = addr;
+            Char delimiter = '#';
+            String[] substrings = new String[2];
+            substrings = value.Split(delimiter);
+            IP = substrings[0];
+            gate = substrings[1];
+            DefoultGateaway = gate;
+            return IP;
         }
     }
 }
