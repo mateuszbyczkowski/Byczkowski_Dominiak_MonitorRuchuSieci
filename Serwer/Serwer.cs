@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,7 +21,8 @@ namespace Serwer
         private static int NumberOfDevices;
         public static Dictionary<int, Users> user = new Dictionary<int, Users>();
         public static string table = "";
-    
+        private static bool draw = false;
+
 
         public Server(int port, bool forwardingStatus = false)
         {
@@ -31,7 +33,8 @@ namespace Serwer
         }
         public void WaitForConnection()
         {
-
+          
+            //Process.Start("D:\\GIT\\Client\\Client\\bin\\Debug\\Client.exe");
             Console.WriteLine(@"Uruchomić serwer? t/n");
             string command = Console.ReadLine();
             if (command == "t")
@@ -41,9 +44,6 @@ namespace Serwer
 
 
             NumberOfDevices = 1;
-
-           // string a = GetDefaultGateway().ToString();
-           //Console.WriteLine();
 
 
 
@@ -56,21 +56,22 @@ namespace Serwer
 
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
-                Console.WriteLine( i + " użytkownik połączony");
+                Console.WriteLine(i + " użytkownik połączony");
                 user.Add(i, new Users(i, communique, client));
-                
+
 
             }
 
             Task t1 = new Task(new Action(CheckForMessages));
             Task t2 = new Task(new Action(NewUser));
             Task t3 = new Task(new Action(WritePingTable));
-
+            Task t4 = new Task(new Action(DrawgGraph));
 
             t1.Start();
             t2.Start();
             t3.Start();
-            Task.WaitAny(t1, t2,t3);
+            t4.Start();
+            Task.WaitAny(t1, t2, t3, t4);
         }
         public void NewUser()
         {
@@ -99,7 +100,7 @@ namespace Serwer
 
                     Thread.Sleep(300);
                 }
-              
+
                 SendCommunique("#####", i.Value.client.Tcp);
             }
 
@@ -111,9 +112,9 @@ namespace Serwer
             while (true)
             {
 
-               table = "";
+                table = "";
 
-               for (int i = 1; i <= n; i++)
+                for (int i = 1; i <= n; i++)
                 {
                     if (user[i].client.Tcp.Available > 0)
                     {
@@ -138,7 +139,7 @@ namespace Serwer
 
         public void CheckCommunicat(string communique, int nr)
         {
-           
+
             user[nr].NewPing(communique);
         }
 
@@ -181,13 +182,14 @@ namespace Serwer
                 //Console.WriteLine("Podaj komunikat");
                 string communique = Console.ReadLine();
 
-                if(communique=="help")
+                if (communique == "help")
                 {
                     Console.Clear();
                     Console.WriteLine("Dostępne opcje komunikatów: ");
                     Console.WriteLine("    ping - wyświetlenie tablicy pingów połączonych urządzeń");
                     Console.WriteLine("   clear - wyczyszczenie konsoli");
                     Console.WriteLine("  router - wyświetlenie bram domyślnych połączonych urządzeń");
+                    Console.WriteLine("   graph - rysowanie grafu według aktualnie posiadanych danych");
                     Console.WriteLine("    exit - wyłączenie programu");
                 }
                 else if (communique == "ping")
@@ -204,46 +206,71 @@ namespace Serwer
                         }
                     }
                 }
-                else if(communique == "clear")
+                else if (communique == "clear")
                 {
                     Console.Clear();
                 }
-                else if(communique == "router")
+                else if (communique == "router")
                 {
-                    Console.WriteLine("ADRES BRAMY"  + " - " + "ADRES URZĄDZENIA");
+                    Console.WriteLine("ADRES BRAMY" + " - " + "ADRES URZĄDZENIA");
                     foreach (KeyValuePair<int, Users> i in user)
                     {
-                        Console.WriteLine( i.Value.DefoultGateaway + " - " + i.Value.IP );
+                        Console.WriteLine(i.Value.DefoultGateaway + " - " + i.Value.IP);
                     }
                 }
                 else if (communique == "exit")
                 {
                     foreach (KeyValuePair<int, Users> i in user)
                     {
-                         SendCommunique("EXIT", i.Value.client.Tcp);
+                        SendCommunique("EXIT", i.Value.client.Tcp);
                     }
                     System.Diagnostics.Process.GetCurrentProcess().Kill();
+                }
+                else if (communique == "graph")
+                {
+                    draw = true;
                 }
                 else
                 {
                     Console.WriteLine("----NIEZNANE POLECENIE----");
                     Console.WriteLine("Jeśli chcesz zobaczyć możliwe polecenia wpisz help");
                 }
-                
+
 
             }
         }
 
-        public static IPAddress GetDefaultGateway()
+        private static void DrawgGraph()
         {
-            return NetworkInterface
-                .GetAllNetworkInterfaces()
-                .Where(n => n.OperationalStatus == OperationalStatus.Up)
-                .SelectMany(n => n.GetIPProperties()?.GatewayAddresses)
-                .Select(g => g?.Address)
-                .FirstOrDefault(a => a != null);
+            while (true)
+            {
+                if (draw)
+                {
+                    List<string> ToFile = new List<String>();
+                    ToFile.Add("graph { ");
+                    //ToFile.Add("a--b");
+                    foreach (var us in user)
+                    {
+                        ToFile.Add("\"" + us.Value.IP + "\"" + "--" +"\"" + us.Value.DefoultGateaway + ";" + "\n" + "\"");
+                    }
+
+                    ToFile.Add("}");
+                    System.IO.File.WriteAllLines(@"testgraph.dt", ToFile);
+                    //const string strCmdText = "/C dot.exe –c&dot.exe –Tjpg –O testgraph.dt";
+                    const string strCmdText = "/C dot.exe –c&dot -Tjpg  testgraph.dt -o image.jpg";
+                    
+                    Process.Start("CMD.exe", strCmdText);
+                    Process.Start(@"image.jpg");
+                    //Console.WriteLine(ToFile);
+                    draw = false;
+                }
+
+
+            }
         }
 
-      
+
+
+
     }
 }
