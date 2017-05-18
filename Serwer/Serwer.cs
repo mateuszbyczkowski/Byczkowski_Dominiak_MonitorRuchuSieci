@@ -22,6 +22,8 @@ namespace Serwer
         public static Dictionary<int, Users> user = new Dictionary<int, Users>();
         public static string table = "";
         private static bool draw = false;
+        public static List<Packets> packet= new List<Packets>();
+        
 
 
         public Server(int port, bool forwardingStatus = false)
@@ -35,19 +37,19 @@ namespace Serwer
         {
           
             //Process.Start("D:\\GIT\\Client\\Client\\bin\\Debug\\Client.exe");
-            Console.WriteLine(@"Uruchomić serwer? t/n");
-            string command = Console.ReadLine();
-            if (command == "t")
-                ForwardingStatus = true;
-            else
-                ForwardingStatus = false;
+            //Console.WriteLine(@"Uruchomić serwer? t/n");
+            //string command = Console.ReadLine();
+            //if (command == "t")
+               
+            //else
+            //    ForwardingStatus = false;
 
-
+            ForwardingStatus = true;
             NumberOfDevices = 1;
+            Console.WriteLine("Uruchomiono serwer");
 
 
-
-            Console.WriteLine("Oczekiwanie na połączenie użytkownikow");
+            Console.WriteLine("Oczekiwanie na połączenie użytkownikow.");
             TcpClient client;
             string communique;
 
@@ -56,7 +58,7 @@ namespace Serwer
 
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
-                Console.WriteLine(i + " użytkownik połączony");
+                Console.WriteLine("Użytkownik "+i+" połączony.");
                 user.Add(i, new Users(i, communique, client));
 
 
@@ -65,7 +67,7 @@ namespace Serwer
             Task t1 = new Task(new Action(CheckForMessages));
             Task t2 = new Task(new Action(NewUser));
             Task t3 = new Task(new Action(WritePingTable));
-            Task t4 = new Task(new Action(DrawgGraph));
+            Task t4 = new Task(new Action(DrawGraph));
 
             t1.Start();
             t2.Start();
@@ -83,7 +85,7 @@ namespace Serwer
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
                 NumberOfDevices++;
-                Console.WriteLine("Użytkownik " + NumberOfDevices + " połączony");
+                Console.WriteLine("Użytkownik " + NumberOfDevices + " połączony.");
                 user.Add(NumberOfDevices, new Users(NumberOfDevices, communique, client));
                 Thread.Sleep(200);
                 SendIPaddr();
@@ -104,7 +106,7 @@ namespace Serwer
                 SendCommunique("#####", i.Value.client.Tcp);
             }
 
-            Console.WriteLine("Odswieżono adresy IP");
+            Console.WriteLine("Odswieżono adresy IP.");
         }
         public void CheckForMessages()
         {
@@ -139,8 +141,25 @@ namespace Serwer
 
         public void CheckCommunicat(string communique, int nr)
         {
-
-            user[nr].NewPing(communique);
+            if (communique[0] == '^')
+            {
+                communique=communique.Trim(new Char[] {'^'});
+                user[nr].NewConnection(communique);
+            }
+            else if(communique[0]=='*')
+            {
+                communique = communique.Trim(new Char[] { '*' });
+                
+                packet.Add(new Packets(communique, packet.Count));
+            }
+            else if(communique=="@@@@@")
+            {
+                Console.WriteLine("Klient o adresie " + user[nr].IP + " przesłał przechwycone pakiety");
+            }
+            else
+            {
+                user[nr].NewPing(communique);
+            }
         }
 
         private string getCommunique(TcpClient tcpClient)
@@ -191,6 +210,7 @@ namespace Serwer
                     Console.WriteLine("  router - wyświetlenie bram domyślnych połączonych urządzeń");
                     Console.WriteLine("   graph - rysowanie grafu według aktualnie posiadanych danych");
                     Console.WriteLine("    exit - wyłączenie programu");
+                    Console.WriteLine("    dump - uruchomienie procesu pozyskiwania przechwyconych pakietów przez klientów");
                 }
                 else if (communique == "ping")
                 {
@@ -230,6 +250,31 @@ namespace Serwer
                 {
                     draw = true;
                 }
+                else if(communique == "dump")
+                {
+                    foreach (KeyValuePair<int, Users> i in user)
+                    {
+                        SendCommunique("DUMP", i.Value.client.Tcp);
+                    }
+                }
+                else if (communique == "packets")
+                {
+                   // List<int> temp = new List<int>();
+                    foreach (Packets p in packet)
+                    {
+                           
+                            Console.Write(p.display_information());
+
+                    }
+                  
+                        
+                }
+                else if(communique == "filtr")
+                {
+                    filtr();
+                    //TODO filtrowanie z tych samych pakietów
+
+                }
                 else
                 {
                     Console.WriteLine("----NIEZNANE POLECENIE----");
@@ -240,7 +285,7 @@ namespace Serwer
             }
         }
 
-        private static void DrawgGraph()
+        private static void DrawGraph()
         {
             while (true)
             {
@@ -251,17 +296,28 @@ namespace Serwer
                     //ToFile.Add("a--b");
                     foreach (var us in user)
                     {
-                        ToFile.Add("\"" + us.Value.IP + "\"" + "--" +"\"" + us.Value.DefoultGateaway + ";" + "\n" + "\"");
+                        ToFile.Add("\"" + us.Value.DefoultGateaway + "\" " + "[shape = box];");
+                        ToFile.Add("\"" + us.Value.IP + "\"" + "--" +"\"" + us.Value.DefoultGateaway+"\"" + ";" + "\n" );
+                        for(int i=0;i<us.Value.Number_of_connection;i++)
+                        {
+                            ToFile.Add("\"" + us.Value.IP + "\"" + "--" + "\"" + us.Value.getConnection(i) + "\"" + ";" + "\n");
+                        }
+
                     }
+                    
+                    
+
 
                     ToFile.Add("}");
                     System.IO.File.WriteAllLines(@"testgraph.dt", ToFile);
                     //const string strCmdText = "/C dot.exe –c&dot.exe –Tjpg –O testgraph.dt";
                     const string strCmdText = "/C dot.exe –c&dot -Tjpg  testgraph.dt -o image.jpg";
+
                     
                     Process.Start("CMD.exe", strCmdText);
+                    Thread.Sleep(1000);
                     Process.Start(@"image.jpg");
-                    //Console.WriteLine(ToFile);
+                    
                     draw = false;
                 }
 
@@ -269,6 +325,56 @@ namespace Serwer
             }
         }
 
+        private static void filtr()
+        {
+            List<Packets> p2 = new List <Packets>();
+            var unique = packet.Distinct(new MyComparer());
+            //Console.WriteLine("filtr");
+            
+            foreach(var a in unique)
+            {
+                //Console.WriteLine(a.display_information());
+            }
+            unique = unique.Distinct(new MyComparer2());
+            foreach (var a in unique)
+            {
+                //Console.WriteLine(a.display_information());
+                p2.Add(new Packets(a.Line, p2.Count));
+            }
+            packet.Clear();
+            foreach(Packets p in p2)
+            {
+                packet.Add(p);
+            }
+        }
+
+        class MyComparer : IEqualityComparer<Packets>
+        {
+            public bool Equals(Packets x, Packets y)
+            {
+                return x.CheckSum.Equals(y.CheckSum);
+
+            }
+
+            public int GetHashCode(Packets obj)
+            {
+                return obj.CheckSum.GetHashCode();
+            }
+        }
+
+        class MyComparer2 : IEqualityComparer<Packets>
+        {
+            public bool Equals(Packets x, Packets y)
+            {
+                return x.Identification.Equals(y.Identification);
+
+            }
+
+            public int GetHashCode(Packets obj)
+            {
+                return obj.Identification.GetHashCode();
+            }
+        }
 
 
 

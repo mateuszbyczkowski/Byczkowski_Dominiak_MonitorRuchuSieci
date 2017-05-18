@@ -11,16 +11,19 @@ using System.Net.NetworkInformation;
 
 namespace Serwer
 {
-    
+
     class Users
     {
         public int nr { get; set; }
         public string IP { get; set; }
         public Client client { get; set; }
-        
+
         public Dictionary<string, bool> ping = new Dictionary<string, bool>();
 
         public string DefoultGateaway;
+        public int Number_of_connection=0;
+
+        public static List<string> connection = new List<string>() ;
 
 
         public Users(int new_nr, string new_ip, TcpClient new_tcp)
@@ -78,6 +81,21 @@ namespace Serwer
             gate = substrings[1];
             DefoultGateaway = gate;
             return IP;
+        }
+
+        public void NewConnection(string addr)
+        {
+            if(connection.Contains(addr)==false)
+            {
+                connection.Add(addr);
+                Number_of_connection++;
+                //Console.WriteLine(addr);
+            }
+        }
+
+        public string getConnection(int i)
+        {
+            return connection[i];
         }
     }
 }
