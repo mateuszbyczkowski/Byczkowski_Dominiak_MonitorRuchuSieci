@@ -209,6 +209,8 @@ namespace Serwer
                     Console.WriteLine("   clear - wyczyszczenie konsoli");
                     Console.WriteLine("  router - wyświetlenie bram domyślnych połączonych urządzeń");
                     Console.WriteLine("   graph - rysowanie grafu według aktualnie posiadanych danych");
+                    Console.WriteLine(" packets - wyświetlenie przechowywanych pakietów");
+                    Console.WriteLine("   filtr - usunięcie duplikatów z przechowywanych pakietów");
                     Console.WriteLine("    exit - wyłączenie programu");
                     Console.WriteLine("    dump - uruchomienie procesu pozyskiwania przechwyconych pakietów przez klientów");
                 }
@@ -291,21 +293,56 @@ namespace Serwer
             {
                 if (draw)
                 {
+                    string temp = "";
                     List<string> ToFile = new List<String>();
                     ToFile.Add("graph { ");
-                    //ToFile.Add("a--b");
+                    ToFile.Add(" graph[pad = \" .75\" , ranksep = \" 0.25\" , nodesep = \" 0.25\" ];");
+                    ToFile.Add("newrank = true"); 
+                    //ToFile.Add("subgraph cluster_0 { "+"\n "+ "label=\"Router\""+";");
+
+                    ToFile.Add("\""+user[1].DefoultGateaway+ "\" " + "[shape = octagon, color=red];" + "\n");
+                    //ToFile.Add("}"+"\n");
+                   // ToFile.Add("\n"+"subgraph cluster_1 { " + "\n " + "label =\"Client\"" + ";");
                     foreach (var us in user)
                     {
-                        ToFile.Add("\"" + us.Value.DefoultGateaway + "\" " + "[shape = box];");
-                        ToFile.Add("\"" + us.Value.IP + "\"" + "--" +"\"" + us.Value.DefoultGateaway+"\"" + ";" + "\n" );
-                        for(int i=0;i<us.Value.Number_of_connection;i++)
+                       
+                            ToFile.Add("\"" + us.Value.IP + "\"  [shape=box, color=blue]" +  "; ");
+
+                    }
+                  
+                  //  ToFile.Add("}  \n ");
+
+                   // ToFile.Add( "subgraph cluster_2 { " + "\n " + "label =\"Other\"" + ";");
+                 
+                    //ToFile.Add("}  \n");
+                    foreach (var us in user)
+                    {
+                        if (us.Value.DefoultGateaway != us.Value.IP)
+                            ToFile.Add("\"" + us.Value.DefoultGateaway + "\"" + "--" + "\"" + us.Value.IP + "\"" + "; ");
+
+                    }
+
+                    foreach (var us in user)
+                    {
+
+                        for (int i = 0; i < us.Value.Number_of_connection; i++)
                         {
-                            ToFile.Add("\"" + us.Value.IP + "\"" + "--" + "\"" + us.Value.getConnection(i) + "\"" + ";" + "\n");
+                        
+                            if (us.Value.DefoultGateaway != us.Value.IP)
+                            {
+                                bool TorF = false;
+                                foreach (KeyValuePair<int, Users> j in user)
+                                {
+                                    if (j.Value.IP == us.Value.getConnection(i))
+                                        TorF = true;
+                                }
+                                if (TorF == false)
+                                    ToFile.Add("\"" + us.Value.getConnection(i) + "\"" + "--" + "\"" + us.Value.IP + "\"" + "; " + "\n");
+                            }
                         }
 
                     }
-                    
-                    
+                    // 
 
 
                     ToFile.Add("}");
