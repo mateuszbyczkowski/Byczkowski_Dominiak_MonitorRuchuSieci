@@ -16,6 +16,7 @@ namespace Serwer
     {
         public int nr { get; set; }
         public string IP { get; set; }
+        public string MAC { get; set; }
         public Client client { get; set; }
 
         public Dictionary<string, bool> ping = new Dictionary<string, bool>();
@@ -30,7 +31,7 @@ namespace Serwer
         {
             nr = new_nr;
 
-            IP = GetGateway(new_ip);
+            GetGateway(new_ip);
             client = new Client(new_tcp, "1");
         } 
 
@@ -70,16 +71,15 @@ namespace Serwer
 
         private string GetGateway(string addr)
         {
-            string IP = "";
-            string gate = "";
+           
 
             String value = addr;
             Char delimiter = '#';
             String[] substrings = new String[2];
             substrings = value.Split(delimiter);
             IP = substrings[0];
-            gate = substrings[1];
-            DefoultGateaway = gate;
+            MAC = substrings[1];
+            DefoultGateaway = substrings[2];
             return IP;
         }
 

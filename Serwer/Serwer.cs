@@ -58,10 +58,9 @@ namespace Serwer
 
                 client = Listener.AcceptTcpClient();
                 communique = getCommunique(client);
+           
                 Console.WriteLine("Użytkownik "+i+" połączony.");
                 user.Add(i, new Users(i, communique, client));
-
-
             }
 
             Task t1 = new Task(new Action(CheckForMessages));
@@ -141,6 +140,7 @@ namespace Serwer
 
         public void CheckCommunicat(string communique, int nr)
         {
+            Console.WriteLine(communique);
             if (communique[0] == '^')
             {
                 communique=communique.Trim(new Char[] {'^'});

@@ -12,6 +12,8 @@ namespace Serwer
         public int Nr { get; set; }
         public string SourIP { get; set; }
         public string DestIP { get; set; }
+        public string SourMAC { get; set; }
+        public string DestMAC { get; set; }
         public string Protocol { get; set; }
         public string CheckSum { get; set; }
         public string Identification { get; set; }
@@ -19,7 +21,7 @@ namespace Serwer
         public Packets(string line, int Id)
         {
             Line = line;
-
+            Nr = Id;
             string temp = "";
             int fieldnumber = 1;
             for (int i = 0; i < line.Length; i++)
@@ -28,24 +30,17 @@ namespace Serwer
                 {
                     if (fieldnumber == 1)
                     {
-                        Nr = Id;
+                        SourIP = temp;  
                     }
                     else if (fieldnumber == 2)
                     {
-                        Protocol = temp;
+                        DestIP = temp;
                     }
                     else if (fieldnumber == 3)
                     {
-                        SourIP = temp;
+                        SourMAC = temp;
                     }
-                    else if (fieldnumber==4)
-                    {
-                        CheckSum = temp;
-                    }
-                    else if (fieldnumber==5)
-                    {
-                        Identification = temp;
-                    }
+                   
 
 
                     //ostatnie pole jest zakończone dolarem i jest w ifie poniżej
@@ -54,9 +49,9 @@ namespace Serwer
                     fieldnumber++;
                     temp = "";
                 }
-                else if (line[i] == '$')
+                else if (line[i] == ',')
                 {
-                    DestIP = temp;
+                    DestMAC = temp;
                     break;
                 }
                 else
@@ -68,12 +63,12 @@ namespace Serwer
                 //TODO Parsowanie linii
 
             }
-            //display_information();
+            Console.WriteLine(display_information());
         }
 
         public string display_information()
         {
-            return (Nr + " " + Protocol + "  " + SourIP + " " + DestIP+" "  +CheckSum+" " +Identification +"\n");
+            return (Nr + " " + SourMAC + " " + DestMAC + " "  + SourIP + " " + DestIP+"\n");
         }
     }
 }
