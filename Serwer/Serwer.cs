@@ -140,7 +140,7 @@ namespace Serwer
 
         public void CheckCommunicat(string communique, int nr)
         {
-            Console.WriteLine(communique);
+            //Console.WriteLine(communique);
             if (communique[0] == '^')
             {
                 communique=communique.Trim(new Char[] {'^'});
@@ -207,7 +207,7 @@ namespace Serwer
                     Console.WriteLine("Dostępne opcje komunikatów: ");
                     Console.WriteLine("    ping - wyświetlenie tablicy pingów połączonych urządzeń");
                     Console.WriteLine("   clear - wyczyszczenie konsoli");
-                    Console.WriteLine("  router - wyświetlenie bram domyślnych połączonych urządzeń");
+                    Console.WriteLine("    info - wyświetlenie informacji o połączonych urządzeciach");
                     Console.WriteLine("   graph - rysowanie grafu według aktualnie posiadanych danych");
                     Console.WriteLine(" packets - wyświetlenie przechowywanych pakietów");
                     Console.WriteLine("   filtr - usunięcie duplikatów z przechowywanych pakietów");
@@ -232,12 +232,13 @@ namespace Serwer
                 {
                     Console.Clear();
                 }
-                else if (communique == "router")
+                else if (communique == "info")
                 {
-                    Console.WriteLine("ADRES BRAMY" + " - " + "ADRES URZĄDZENIA");
+                    Console.WriteLine("ADRES BRAMY" + " - " + "ADRES URZĄDZENIA" + " - " + "ADRES MAC");
                     foreach (KeyValuePair<int, Users> i in user)
                     {
-                        Console.WriteLine(i.Value.DefoultGateaway + " - " + i.Value.IP);
+                        foreach (string s in i.Value.MAC)
+                            Console.WriteLine(i.Value.DefoultGateaway + " - " + i.Value.IP + " - " + s);
                     }
                 }
                 else if (communique == "exit")
@@ -252,7 +253,7 @@ namespace Serwer
                 {
                     draw = true;
                 }
-                else if(communique == "dump")
+                else if (communique == "dump")
                 {
                     foreach (KeyValuePair<int, Users> i in user)
                     {
@@ -261,20 +262,88 @@ namespace Serwer
                 }
                 else if (communique == "packets")
                 {
-                   // List<int> temp = new List<int>();
-                    foreach (Packets p in packet)
+                    // List<int> temp = new List<int>();
+                    try
                     {
-                           
+                        foreach (Packets p in packet)
+                        {
+
                             Console.Write(p.display_information());
 
+                        }
                     }
-                  
-                        
+                    catch
+                    {
+                        Console.WriteLine("Przesyłanie nie zakończone.");
+                    }
+
+
                 }
-                else if(communique == "filtr")
+                else if (communique == "filtr")
                 {
-                    filtr();
+                    // filtr();
                     //TODO filtrowanie z tych samych pakietów
+
+                }
+                else if (communique == "text")
+                {
+
+                    string path = @"d:\dump\DUMP.txt";
+                    try
+                    {
+                        File.AppendAllText(path, "-------------------------------------" + Environment.NewLine + Environment.NewLine);
+                    }
+                    catch
+                    { }
+                    foreach (Packets p in packet)
+                    {
+
+                        if (!File.Exists(path))
+                        {
+                            // Create a file to write to.
+                            string createText = p.display_information() + Environment.NewLine;
+                            File.WriteAllText(path, createText);
+                        }
+                        else
+                        {
+                            string appendText = p.display_information() + Environment.NewLine;
+                            File.AppendAllText(path, appendText);
+                        }
+                    }
+                }
+                else if (communique == "path")
+                {
+                    Users userA = user[1];
+                    Users userB = user[3];
+                    List<Packets> pack = new List<Packets>();
+                    List<string> tab = new List<string>();
+
+                    foreach (Packets p in packet)
+                    {
+
+                        if (((p.SourIP == userA.IP) && (p.DestIP == userB.IP)) || ((p.SourIP == userB.IP) && (p.DestIP == userA.IP)))
+                        {
+                            Console.WriteLine(p.display_information());
+                            tab.Add(p.CheckSum);
+                        }
+                    }
+                    foreach(string sum in tab)
+                    {
+                        pack = null;
+                        pack = new List<Packets>();
+
+                        foreach(Packets p in packet)
+                        {
+                            if (p.CheckSum == sum)
+                            {
+                                pack.Add(p);
+                            }
+                        }
+
+                        //TODO
+
+
+                    }
 
                 }
                 else

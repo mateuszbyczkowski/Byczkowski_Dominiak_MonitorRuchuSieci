@@ -40,7 +40,10 @@ namespace Serwer
                     {
                         SourMAC = temp;
                     }
-                   
+                    else if (fieldnumber == 4)
+                    {
+                        DestMAC = temp;
+                    }
 
 
                     //ostatnie pole jest zakończone dolarem i jest w ifie poniżej
@@ -51,7 +54,7 @@ namespace Serwer
                 }
                 else if (line[i] == ',')
                 {
-                    DestMAC = temp;
+                    CheckSum = temp;
                     break;
                 }
                 else
@@ -63,12 +66,12 @@ namespace Serwer
                 //TODO Parsowanie linii
 
             }
-            Console.WriteLine(display_information());
+            //Console.WriteLine(display_information());
         }
 
         public string display_information()
         {
-            return (Nr + " " + SourMAC + " " + DestMAC + " "  + SourIP + " " + DestIP+"\n");
+            return (Nr + " " + SourMAC + " " + DestMAC + " "  + SourIP + " " + DestIP+" " +CheckSum+"\n");
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Serwer
     {
         public int nr { get; set; }
         public string IP { get; set; }
-        public string MAC { get; set; }
+        public List<string> MAC { get; set; }
         public Client client { get; set; }
 
         public Dictionary<string, bool> ping = new Dictionary<string, bool>();
@@ -30,7 +30,7 @@ namespace Serwer
         public Users(int new_nr, string new_ip, TcpClient new_tcp)
         {
             nr = new_nr;
-
+            MAC = new List<string>();
             GetGateway(new_ip);
             client = new Client(new_tcp, "1");
         } 
@@ -43,7 +43,7 @@ namespace Serwer
             Char delimiter = '#';
             String[] substrings = new String[2];
             substrings=value.Split(delimiter);
-
+            
             value= substrings[0];
             if (substrings[1] == "True")
             {
@@ -71,16 +71,36 @@ namespace Serwer
 
         private string GetGateway(string addr)
         {
-           
 
+            string tempMAC = "";
             String value = addr;
             Char delimiter = '#';
             String[] substrings = new String[2];
             substrings = value.Split(delimiter);
             IP = substrings[0];
-            MAC = substrings[1];
+            tempMAC = substrings[1];
+            GetMAC(tempMAC);
             DefoultGateaway = substrings[2];
             return IP;
+        }
+
+        private void GetMAC(string tempMAC)
+        {
+
+      
+            String value = tempMAC;
+            Char delimiter = '@';
+            String[] substrings = new String[10];
+            substrings = value.Split(delimiter);
+            foreach(String s in substrings)
+            {
+                if(s!=""&s!=null)
+                {
+                    MAC.Add(s);
+                }
+
+            }
+    
         }
 
         public void NewConnection(string addr)
