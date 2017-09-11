@@ -38,11 +38,11 @@ namespace Serwer
                     }
                     else if (fieldnumber == 3)
                     {
-                        SourMAC = temp;
+                        SourMAC = temp.Replace(":", "").ToUpper();
                     }
                     else if (fieldnumber == 4)
                     {
-                        DestMAC = temp;
+                        DestMAC = temp.Replace(":", "").ToUpper();
                     }
 
 

@@ -22,8 +22,12 @@ namespace Serwer
         public static Dictionary<int, Users> user = new Dictionary<int, Users>();
         public static string table = "";
         private static bool draw = false;
+        private static bool drawpath = false;
         public static List<Packets> packet= new List<Packets>();
-        
+        private static List<Pair> IPpairs = new List<Pair>();
+        private static string SourIP = "";
+        private static string DestIP = "";
+
 
 
         public Server(int port, bool forwardingStatus = false)
@@ -67,12 +71,14 @@ namespace Serwer
             Task t2 = new Task(new Action(NewUser));
             Task t3 = new Task(new Action(WritePingTable));
             Task t4 = new Task(new Action(DrawGraph));
+            Task t5 = new Task(new Action(DrawPath));
 
             t1.Start();
             t2.Start();
             t3.Start();
             t4.Start();
-            Task.WaitAny(t1, t2, t3, t4);
+            t5.Start();
+            Task.WaitAny(t1, t2, t3, t4,t5);
         }
         public void NewUser()
         {
@@ -205,10 +211,12 @@ namespace Serwer
                 {
                     Console.Clear();
                     Console.WriteLine("Dostępne opcje komunikatów: ");
+                    Console.WriteLine("   users - wyświetlenie listy użytkowników");
                     Console.WriteLine("    ping - wyświetlenie tablicy pingów połączonych urządzeń");
                     Console.WriteLine("   clear - wyczyszczenie konsoli");
                     Console.WriteLine("    info - wyświetlenie informacji o połączonych urządzeciach");
                     Console.WriteLine("   graph - rysowanie grafu według aktualnie posiadanych danych");
+                    Console.WriteLine("    path - rysowanie ścieżki między użytkownikami");
                     Console.WriteLine(" packets - wyświetlenie przechowywanych pakietów");
                     Console.WriteLine("   filtr - usunięcie duplikatów z przechowywanych pakietów");
                     Console.WriteLine("    exit - wyłączenie programu");
@@ -285,6 +293,15 @@ namespace Serwer
                     //TODO filtrowanie z tych samych pakietów
 
                 }
+                else if (communique == "users")
+                {
+                    Console.WriteLine("Lista użytkowników: ");
+                    foreach(var u in user)
+                    {
+                        Console.WriteLine(u.Value.nr.ToString() + ' ' + u.Value.IP );
+                    }
+
+                }
                 else if (communique == "text")
                 {
 
@@ -313,43 +330,172 @@ namespace Serwer
                 }
                 else if (communique == "path")
                 {
-                    Users userA = user[1];
-                    Users userB = user[3];
-                    List<Packets> pack = new List<Packets>();
-                    List<string> tab = new List<string>();
+                    bool temp1 = true;
+                    bool temp2 = true;
+                    Users userA = null;                  // Użytkowni początkowy
+                    Users userB = null;                  // Użytkownik docelowy
+                    
 
-                    foreach (Packets p in packet)
-                    {
+                    Console.WriteLine("Podaj numeru użykownikownika początkowego");
+                    var a = Console.ReadLine();
+                    userA = user[Convert.ToInt16(a)];
 
-                        if (((p.SourIP == userA.IP) && (p.DestIP == userB.IP)) || ((p.SourIP == userB.IP) && (p.DestIP == userA.IP)))
+
+                    Console.WriteLine("Podaj numeru użykownikownika końcowego");
+                    a = Console.ReadLine();
+                    userB = user[Convert.ToInt16(a)];
+                   
+                    Console.WriteLine("cos");
+                    Console.WriteLine(userA.IP + " %" + userB.IP);
+
+                    List<string> TabPackSum = new List<string>(); //lista sum kontrolnych które znalazły się w połączeniu
+                    List<Packets> MAXpackets = new List<Packets>();
+                    List<Pair> IPpair = new List<Pair>();
+                    string MaxSum = "";
+                    int QuanSum = 0;
+                  
+
+                        foreach (Packets p in packet)
                         {
-                            Console.WriteLine(p.display_information());
-                            tab.Add(p.CheckSum);
+
+                            if (((p.SourIP == userA.IP) && (p.DestIP == userB.IP)) || ((p.SourIP == userB.IP) && (p.DestIP == userA.IP)))
+                            {
+                                if (p.CheckSum != "1"&& p.CheckSum != "256"&& p.CheckSum != "512")
+                                {
+                                    Console.WriteLine(p.display_information());
+                                    TabPackSum.Add(p.CheckSum);
+                                }
+                            }
                         }
-                    }
-                    foreach(string sum in tab)
-                    {
-                        pack = null;
+
+                        Console.WriteLine("-------------------------SumyKontrolne--------------------------");
+                        foreach (string sum in TabPackSum)
+                        {
+                     
+                        Console.Write(sum + "  ");
+                        List<Packets> pack = null;
                         pack = new List<Packets>();
 
-                        foreach(Packets p in packet)
+
+                        foreach (Packets p in packet) //szukanie pakietów o wybranej sumie
                         {
+                           
                             if (p.CheckSum == sum)
                             {
                                 pack.Add(p);
                             }
                         }
-
-                        //TODO
-
+                        Console.WriteLine(pack.Count);
+                        if ((pack.Count > QuanSum) && (sum != "1")) //sprawdzenie czy to największa ilość pakietów o sumie !=1 bo 1 to ping i może się powtarzać
+                        {
+                            MaxSum = sum;
+                            QuanSum = pack.Count;
+                            MAXpackets = null;
+                            MAXpackets = pack;
+                        }
+                        
+                        foreach (Packets p in pack)
+                        {
+                            Console.WriteLine(p.display_information());
+                        }
 
                     }
+                    Console.WriteLine("-------------------------ilosc polaczen--------------------------");
+                    foreach (Packets p in MAXpackets) //szukanie połączeń między IP
+                    {
 
+                        string IPa = "nieznany";
+                        string IPb = "nieznany";
+                        foreach (var u in user)
+                        {
+                            foreach (string mac in u.Value.MAC)
+                            {
+                                Console.WriteLine(mac + "->" + p.SourMAC);
+                                if (mac == p.SourMAC.ToUpper())
+                                {
+                                    IPa = u.Value.IP;
+                                    Console.WriteLine(mac + "->" + p.SourMAC + " JEST");
+                                    //break;
+                                }
+                                if (mac == p.DestMAC.ToUpper())
+                                {
+                                    Console.WriteLine(mac + "->" + p.DestMAC + " JEST");
+                                    IPb = u.Value.IP;
+                                    //break;
+                                }
+                                Console.WriteLine();
+                            }
+
+                        }
+                        IPpair.Add(new Pair(IPa, IPb));
+
+                    }
+                    Console.WriteLine("-------------------------pary--------------------------");
+
+                    foreach (Pair pair in IPpair)
+                    {
+                        Console.WriteLine(pair.Sour + " -->" + pair.Dest);
+                    }
+                    if (IPpair.Count > 0)
+                    {
+                        SourIP = userA.IP;
+                        DestIP = userB.IP;
+                        IPpairs = IPpair;
+                        drawpath = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Nie znaleziono pakietów przesyłanych między tymi użytkownikami.");
+                    }
                 }
+
                 else
                 {
                     Console.WriteLine("----NIEZNANE POLECENIE----");
                     Console.WriteLine("Jeśli chcesz zobaczyć możliwe polecenia wpisz help");
+                }
+
+
+            }
+        }
+
+        private static void DrawPath()
+        {
+            while (true)
+            {
+                if (drawpath)
+                {
+                    List<string> ToFile = new List<String>();
+                    ToFile.Add("graph { ");
+                    ToFile.Add(" graph[pad = \" .75\" , ranksep = \" 0.25\" , nodesep = \" 0.25\" ];");
+                    ToFile.Add("newrank = true");
+                    foreach (var u in user)
+                    {
+                        ToFile.Add("\"" + u.Value.IP + "\" [shape = box]");
+                        ToFile.Add("\"" + u.Value.IP + "\" [shape = box]");
+                    }
+
+                    foreach (Pair pair in IPpairs)
+                    {
+                        if ((SourIP == pair.Sour && DestIP == pair.Sour) || (DestIP == pair.Sour && SourIP == pair.Dest))
+                        { }
+                        else
+                        {
+                            ToFile.Add("\"" + pair.Sour + "\"" + "--" + "\"" + pair.Dest + "\"" + "; " + "\n");
+                        }
+                    }
+                    ToFile.Add("}");
+                    Console.WriteLine("graf");
+                    System.IO.File.WriteAllLines(@"testpath.dt", ToFile);
+                    //const string strCmdText = "/C dot.exe –c&dot.exe –Tjpg –O testgraph.dt";
+                    const string strCmdText = "/C dot.exe –c&dot -Tjpg  testpath.dt -o path.jpg";
+
+
+                    Process.Start("CMD.exe", strCmdText);
+                    Thread.Sleep(1000);
+                    Process.Start(@"path.jpg");
+
+                    drawpath = false;
                 }
 
 
@@ -362,7 +508,6 @@ namespace Serwer
             {
                 if (draw)
                 {
-                    string temp = "";
                     List<string> ToFile = new List<String>();
                     ToFile.Add("graph { ");
                     ToFile.Add(" graph[pad = \" .75\" , ranksep = \" 0.25\" , nodesep = \" 0.25\" ];");
