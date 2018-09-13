@@ -1,7 +1,7 @@
-# Byczkowski_Dominiak_MonitorRuchuSieci
-Monitor ruchu w sieci z uwzględnieniem topologii
-# Link do bliźniaczego projektu:
+# Byczkowski & Dominiak Network Traffic monitor
+Network Traffic monitor including topology
+# Link to client site:
 https://github.com/mateuszbyczkowski/Client-Site 
-# Autorzy
+# Authors
 Mateusz Byczkowski
 Bartosz Dominiak
